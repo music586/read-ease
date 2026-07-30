@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS,
+  PAGE_DEFAULT_FONT,
+  SYSTEM_SERIF_FONT,
   changedSettings,
   resolveSettings,
 } from "../../src/domain/settings";
@@ -19,5 +21,13 @@ describe("settings", () => {
       changedSettings(DEFAULT_SETTINGS, { ...DEFAULT_SETTINGS, fontSize: 22 }),
     ).toEqual({ fontSize: 22 });
   });
-});
 
+  it("migrates legacy font stacks to the two supported font choices", () => {
+    expect(resolveSettings({ fontFamily: "Arial, sans-serif" }).fontFamily).toBe(
+      PAGE_DEFAULT_FONT,
+    );
+    expect(resolveSettings({ fontFamily: "Georgia, serif" }).fontFamily).toBe(
+      SYSTEM_SERIF_FONT,
+    );
+  });
+});

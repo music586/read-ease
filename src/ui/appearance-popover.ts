@@ -1,4 +1,9 @@
-import type { ReaderSettings, ReaderTheme } from "../domain/settings";
+import {
+  PAGE_DEFAULT_FONT,
+  SYSTEM_SERIF_FONT,
+  type ReaderSettings,
+  type ReaderTheme,
+} from "../domain/settings";
 
 export type SettingsScope = "global" | "site";
 
@@ -84,9 +89,8 @@ export function createAppearancePopover(
   fontRow.append(document.createTextNode("字体"));
   const font = element("select", { "data-setting": "font-family" });
   const fonts = [
-    ["系统衬线", 'ui-serif, "Noto Serif CJK SC", Georgia, serif'],
-    ["系统无衬线", 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'],
-    ["宋体", '"Songti SC", SimSun, serif'],
+    ["衬线（系统默认）", SYSTEM_SERIF_FONT],
+    ["非衬线（网页默认）", PAGE_DEFAULT_FONT],
   ];
   for (const [label, value] of fonts) {
     const option = element("option");

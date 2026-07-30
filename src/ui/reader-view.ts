@@ -41,7 +41,13 @@ export function mountReaderView(
   style.textContent = READER_CSS;
   const overlay = document.createElement("div");
   overlay.className = "overlay";
-  overlay.setAttribute("style", settingsVariables(settings));
+  const pageFontFamily =
+    getComputedStyle(document.body).fontFamily || "ui-sans-serif, system-ui, sans-serif";
+  const applySettings = (next: ReaderSettings): void => {
+    overlay.setAttribute("style", settingsVariables(next));
+    overlay.style.setProperty("--re-page-font-family", pageFontFamily);
+  };
+  applySettings(settings);
 
   const pill = document.createElement("div");
   pill.className = "pill";
@@ -103,7 +109,7 @@ export function mountReaderView(
 
   return {
     updateSettings(next) {
-      overlay.setAttribute("style", settingsVariables(next));
+      applySettings(next);
       popover.update(next);
     },
     closePopover() {

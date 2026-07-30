@@ -13,10 +13,13 @@ export interface ReaderSettings {
 
 export type SiteSettingsOverride = Partial<ReaderSettings>;
 
+export const SYSTEM_SERIF_FONT = "serif";
+export const PAGE_DEFAULT_FONT =
+  "var(--re-page-font-family, ui-sans-serif, system-ui, sans-serif)";
+
 export const DEFAULT_SETTINGS: ReaderSettings = {
   theme: "sepia",
-  fontFamily:
-    'ui-serif, "Source Han Serif SC", "Noto Serif CJK SC", Georgia, serif',
+  fontFamily: SYSTEM_SERIF_FONT,
   fontSize: 19,
   letterSpacing: 0.01,
   lineHeight: 1.85,
@@ -29,7 +32,16 @@ export function resolveSettings(
   global: Partial<ReaderSettings> = {},
   site: SiteSettingsOverride = {},
 ): ReaderSettings {
-  return { ...DEFAULT_SETTINGS, ...global, ...site };
+  const resolved = { ...DEFAULT_SETTINGS, ...global, ...site };
+  if (
+    resolved.fontFamily !== SYSTEM_SERIF_FONT &&
+    resolved.fontFamily !== PAGE_DEFAULT_FONT
+  ) {
+    resolved.fontFamily = resolved.fontFamily.includes("sans")
+      ? PAGE_DEFAULT_FONT
+      : SYSTEM_SERIF_FONT;
+  }
+  return resolved;
 }
 
 export function changedSettings(
@@ -42,4 +54,3 @@ export function changedSettings(
     ),
   ) as SiteSettingsOverride;
 }
-

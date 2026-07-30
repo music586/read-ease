@@ -37,6 +37,13 @@ describe("reader view", () => {
     const host = document.querySelector<HTMLElement>("[data-read-ease-host]");
     expect(host?.shadowRoot?.textContent).toContain("A quiet article");
     expect(source.textContent).toBe("Original page");
+    const fontOptions = [
+      ...(host?.shadowRoot?.querySelectorAll("select option") ?? []),
+    ].map((option) => option.textContent);
+    expect(fontOptions).toEqual([
+      "衬线（系统默认）",
+      "非衬线（网页默认）",
+    ]);
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");
