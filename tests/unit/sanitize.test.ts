@@ -49,4 +49,19 @@ describe("article sanitizer", () => {
     expect(clean).not.toContain("<h2>AI猜你想问</h2>");
     expect(clean).toContain("不能误删正文");
   });
+
+  it("promotes Caixin lazy-loaded image URLs to standard src attributes", () => {
+    const clean = sanitizeArticleHtml(
+      `<figure>
+        <img data-src="https://img.caixin.com/2026/photo_840_560.jpg">
+        <figcaption>财新图片说明</figcaption>
+      </figure>`,
+      new URL("https://www.caixin.com/2026/article.html"),
+    );
+    expect(clean).toContain(
+      'src="https://img.caixin.com/2026/photo_840_560.jpg"',
+    );
+    expect(clean).not.toContain("data-src");
+    expect(clean).toContain("财新图片说明");
+  });
 });

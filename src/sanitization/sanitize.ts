@@ -139,6 +139,10 @@ export function sanitizeArticleHtml(
       "cite",
       "colspan",
       "datetime",
+      "data-lazy-src",
+      "data-original",
+      "data-src",
+      "data-srcset",
       "height",
       "href",
       "rowspan",
@@ -168,24 +172,42 @@ export function sanitizeArticleHtml(
     }
   });
   template.content
-    .querySelectorAll<HTMLImageElement>("img[src], source[src]")
+    .querySelectorAll<HTMLImageElement>("img, source")
     .forEach((image) => {
-      const value = safeAbsoluteUrl(image.getAttribute("src") ?? "", baseUrl);
+      const value = [
+        image.getAttribute("src"),
+        image.getAttribute("data-src"),
+        image.getAttribute("data-original"),
+        image.getAttribute("data-lazy-src"),
+      ]
+        .filter((candidate): candidate is string => Boolean(candidate))
+        .map((candidate) => safeAbsoluteUrl(candidate, baseUrl))
+        .find((candidate): candidate is string => Boolean(candidate));
       if (value) image.setAttribute("src", value);
       else image.removeAttribute("src");
+      image.removeAttribute("data-src");
+      image.removeAttribute("data-original");
+      image.removeAttribute("data-lazy-src");
     });
-  template.content.querySelectorAll<HTMLElement>("[srcset]").forEach((element) => {
-    const resolved = (element.getAttribute("srcset") ?? "")
-      .split(",")
-      .map((entry) => {
-        const [rawUrl, descriptor] = entry.trim().split(/\s+/, 2);
-        const url = rawUrl ? safeAbsoluteUrl(rawUrl, baseUrl) : null;
-        return url ? `${url}${descriptor ? ` ${descriptor}` : ""}` : "";
-      })
-      .filter(Boolean)
-      .join(", ");
-    if (resolved) element.setAttribute("srcset", resolved);
-    else element.removeAttribute("srcset");
-  });
+  template.content
+    .querySelectorAll<HTMLElement>("[srcset], [data-srcset]")
+    .forEach((element) => {
+      const resolved = (
+        element.getAttribute("srcset") ??
+        element.getAttribute("data-srcset") ??
+        ""
+      )
+        .split(",")
+        .map((entry) => {
+          const [rawUrl, descriptor] = entry.trim().split(/\s+/, 2);
+          const url = rawUrl ? safeAbsoluteUrl(rawUrl, baseUrl) : null;
+          return url ? `${url}${descriptor ? ` ${descriptor}` : ""}` : "";
+        })
+        .filter(Boolean)
+        .join(", ");
+      if (resolved) element.setAttribute("srcset", resolved);
+      else element.removeAttribute("srcset");
+      element.removeAttribute("data-srcset");
+    });
   return template.innerHTML;
 }
