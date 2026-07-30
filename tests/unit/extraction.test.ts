@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createRule } from "../../src/domain/rules";
 import { extractArticle } from "../../src/extraction/extract";
 import { extractWithHeuristic } from "../../src/extraction/heuristic";
+import { augmentArticleForSite } from "../../src/extraction/site-augment";
+import type { Article } from "../../src/domain/article";
 
 describe("article extraction", () => {
   it("uses a valid user rule before generic extraction", () => {
@@ -42,5 +44,38 @@ describe("article extraction", () => {
     expect(article?.title).toBe("Fallback article");
     expect(article?.textContent).toContain("仍然属于正文");
     expect(article?.contentHtml).not.toContain("推荐内容");
+  });
+
+  it("adds Caixin media blocks that sit outside the text body", () => {
+    document.body.innerHTML = `
+      <div class="media article_media_pic">
+        <dl class="media_pic">
+          <dt><img data-src="https://img.caixin.com/photo_840_560.jpg"></dt>
+          <dd>图片说明：财新记者拍摄</dd>
+        </dl>
+      </div>
+      <div id="Main_Content_Val"><p>文章正文</p></div>`;
+    const article: Article = {
+      title: "财新文章",
+      byline: null,
+      publishedTime: null,
+      siteName: "财新网",
+      excerpt: null,
+      leadImage: null,
+      contentHtml: "<div><p>文章正文</p></div>",
+      textContent: "文章正文",
+      sourceUrl: "https://www.caixin.com/article.html",
+      readingMinutes: 1,
+    };
+    const augmented = augmentArticleForSite(
+      article,
+      document,
+      new URL("https://www.caixin.com/article.html"),
+    );
+    expect(augmented.contentHtml).toContain(
+      'src="https://img.caixin.com/photo_840_560.jpg"',
+    );
+    expect(augmented.contentHtml).toContain("图片说明：财新记者拍摄");
+    expect(augmented.contentHtml).toContain("文章正文");
   });
 });

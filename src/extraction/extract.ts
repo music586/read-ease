@@ -8,6 +8,7 @@ import { articleQuality } from "./quality";
 import { extractWithHeuristic } from "./heuristic";
 import { extractWithReadability } from "./readability";
 import { extractWithRule } from "./rule-extractor";
+import { augmentArticleForSite } from "./site-augment";
 
 export interface ExtractionOptions {
   temporaryRule?: SiteRule;
@@ -29,14 +30,20 @@ export function extractArticle(
 
   for (const [source, rule] of candidates) {
     if (!rule) continue;
-    const article = extractWithRule(document, url, rule);
+    const extracted = extractWithRule(document, url, rule);
+    const article = extracted
+      ? augmentArticleForSite(extracted, document, url)
+      : null;
     if (article && articleQuality(article.textContent, article.contentHtml).pass) {
       return { ok: true, article, source, warnings };
     }
     warnings.push({ source, message: "规则未能提取到足够的正文内容" });
   }
 
-  const readabilityArticle = extractWithReadability(document, url);
+  const readabilityExtracted = extractWithReadability(document, url);
+  const readabilityArticle = readabilityExtracted
+    ? augmentArticleForSite(readabilityExtracted, document, url)
+    : null;
   if (
     readabilityArticle &&
     articleQuality(
@@ -58,7 +65,10 @@ export function extractArticle(
     });
   }
 
-  const heuristicArticle = extractWithHeuristic(document, url);
+  const heuristicExtracted = extractWithHeuristic(document, url);
+  const heuristicArticle = heuristicExtracted
+    ? augmentArticleForSite(heuristicExtracted, document, url)
+    : null;
   if (
     heuristicArticle &&
     articleQuality(heuristicArticle.textContent, heuristicArticle.contentHtml)
