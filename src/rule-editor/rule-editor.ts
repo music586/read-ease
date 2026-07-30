@@ -16,11 +16,14 @@ export class RuleEditor {
       const title = await this.selection.pickOne("点击文章标题");
       if (title) rule.selectors.title = title.selector;
     }
-    while (window.confirm("是否选择一个需要排除的区域？")) {
-      const excluded = await this.selection.pickOne("点击广告、推荐或其他排除区域");
-      if (!excluded) break;
-      if (!rule.excludedSelectors.includes(excluded.selector)) {
-        rule.excludedSelectors.push(excluded.selector);
+    if (window.confirm("是否选择需要排除的广告、推荐或其他区域？")) {
+      const excluded = await this.selection.pickMany(
+        "点击需要排除的区域，再按 Enter 完成",
+      );
+      if (excluded) {
+        rule.excludedSelectors = [
+          ...new Set(excluded.map((item) => item.selector)),
+        ];
       }
     }
     const validation = validateRule(rule, document);

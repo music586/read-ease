@@ -36,26 +36,49 @@ export class SelectionMode {
   private host: HTMLElement | null = null;
   private highlight: HTMLElement | null = null;
   private target: Element | null = null;
-  private resolve: ((result: SelectionResult | null) => void) | null = null;
+  private mode: "one" | "many" = "one";
+  private selected = new Map<
+    string,
+    { result: SelectionResult; overlay: HTMLElement }
+  >();
+  private resolveOne: ((result: SelectionResult | null) => void) | null = null;
+  private resolveMany:
+    | ((results: SelectionResult[] | null) => void)
+    | null = null;
 
   pickOne(instruction: string): Promise<SelectionResult | null> {
     this.stop();
-    this.mount(instruction);
+    this.mode = "one";
+    this.mount(instruction, false);
     document.addEventListener("mouseover", this.onHover, true);
     document.addEventListener("click", this.onClick, true);
     document.addEventListener("keydown", this.onKeydown, true);
     return new Promise((resolve) => {
-      this.resolve = resolve;
+      this.resolveOne = resolve;
+    });
+  }
+
+  pickMany(instruction: string): Promise<SelectionResult[] | null> {
+    this.stop();
+    this.mode = "many";
+    this.mount(instruction, true);
+    document.addEventListener("mouseover", this.onHover, true);
+    document.addEventListener("click", this.onClick, true);
+    document.addEventListener("keydown", this.onKeydown, true);
+    return new Promise((resolve) => {
+      this.resolveMany = resolve;
     });
   }
 
   cancel(): void {
-    const resolve = this.resolve;
+    const resolveOne = this.resolveOne;
+    const resolveMany = this.resolveMany;
     this.stop();
-    resolve?.(null);
+    resolveOne?.(null);
+    resolveMany?.(null);
   }
 
-  private mount(instruction: string): void {
+  private mount(instruction: string, multi: boolean): void {
     this.host = document.createElement("div");
     this.host.dataset.readEaseSelector = "";
     const shadow = this.host.attachShadow({ mode: "open" });
@@ -63,15 +86,29 @@ export class SelectionMode {
       <style>
         :host { all: initial; }
         .hint { position:fixed; top:18px; left:50%; transform:translateX(-50%);
-          z-index:2147483647; padding:10px 14px; border-radius:999px;
+          z-index:2147483647; padding:8px 10px 8px 14px; border-radius:999px;
           color:#fff; background:#263224; box-shadow:0 8px 26px #0005;
-          font:600 13px/1.2 ui-sans-serif,system-ui; }
+          font:600 13px/1.2 ui-sans-serif,system-ui; display:flex;
+          align-items:center; gap:10px; white-space:nowrap; }
         .highlight { position:fixed; z-index:2147483646; pointer-events:none;
           border:3px solid #6d9c58; background:#83bd6840; border-radius:4px; }
+        .selected { position:fixed; z-index:2147483645; pointer-events:none;
+          border:3px solid #c75b4f; background:#d96b5c35; border-radius:4px; }
+        button { border:0; border-radius:999px; padding:7px 11px; cursor:pointer;
+          color:#20301e; background:#f2f5ed; font:700 12px/1 ui-sans-serif,system-ui; }
       </style>
-      <div class="hint">${instruction} · Esc 取消</div>
+      <div class="hint">
+        <span>${instruction}${multi ? " · 已选 0 个" : " · Esc 取消"}</span>
+        ${multi ? '<button type="button" data-action="finish">完成（Enter）</button><button type="button" data-action="cancel">取消</button>' : ""}
+      </div>
       <div class="highlight"></div>`;
     this.highlight = shadow.querySelector(".highlight");
+    shadow
+      .querySelector("[data-action=finish]")
+      ?.addEventListener("click", () => this.finishMany());
+    shadow
+      .querySelector("[data-action=cancel]")
+      ?.addEventListener("click", () => this.cancel());
     document.documentElement.append(this.host);
   }
 
@@ -97,17 +134,58 @@ export class SelectionMode {
       element: this.target,
       selector: stableSelector(this.target),
     };
-    const resolve = this.resolve;
+    if (this.mode === "many") {
+      this.toggleMany(result);
+      return;
+    }
+    const resolve = this.resolveOne;
     this.stop();
     resolve?.(result);
   };
 
   private readonly onKeydown = (event: KeyboardEvent): void => {
+    if (event.key === "Enter" && this.mode === "many") {
+      event.preventDefault();
+      this.finishMany();
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       this.cancel();
     }
   };
+
+  private toggleMany(result: SelectionResult): void {
+    const existing = this.selected.get(result.selector);
+    if (existing) {
+      existing.overlay.remove();
+      this.selected.delete(result.selector);
+    } else {
+      const overlay = document.createElement("div");
+      overlay.className = "selected";
+      const rect = result.element.getBoundingClientRect();
+      Object.assign(overlay.style, {
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+      });
+      this.host?.shadowRoot?.append(overlay);
+      this.selected.set(result.selector, { result, overlay });
+    }
+    const label = this.host?.shadowRoot?.querySelector(".hint span");
+    if (label) {
+      label.textContent = `点击广告、推荐等区域 · 已选 ${this.selected.size} 个`;
+    }
+  }
+
+  private finishMany(): void {
+    if (this.mode !== "many") return;
+    const results = [...this.selected.values()].map(({ result }) => result);
+    const resolve = this.resolveMany;
+    this.stop();
+    resolve?.(results);
+  }
 
   private stop(): void {
     document.removeEventListener("mouseover", this.onHover, true);
@@ -117,7 +195,8 @@ export class SelectionMode {
     this.host = null;
     this.highlight = null;
     this.target = null;
-    this.resolve = null;
+    this.selected.clear();
+    this.resolveOne = null;
+    this.resolveMany = null;
   }
 }
-
