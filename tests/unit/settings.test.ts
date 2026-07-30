@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CHINESE_SONG_FONT,
   DEFAULT_SETTINGS,
   PAGE_DEFAULT_FONT,
+  SYSTEM_SANS_FONT,
   SYSTEM_SERIF_FONT,
   changedSettings,
   resolveSettings,
@@ -22,12 +24,23 @@ describe("settings", () => {
     ).toEqual({ fontSize: 22 });
   });
 
-  it("migrates legacy font stacks to the two supported font choices", () => {
+  it("migrates legacy font stacks to a compatible supported choice", () => {
     expect(resolveSettings({ fontFamily: "Arial, sans-serif" }).fontFamily).toBe(
       PAGE_DEFAULT_FONT,
     );
     expect(resolveSettings({ fontFamily: "Georgia, serif" }).fontFamily).toBe(
       SYSTEM_SERIF_FONT,
     );
+  });
+
+  it("preserves each supported font choice for future sessions", () => {
+    for (const fontFamily of [
+      SYSTEM_SERIF_FONT,
+      SYSTEM_SANS_FONT,
+      CHINESE_SONG_FONT,
+      PAGE_DEFAULT_FONT,
+    ]) {
+      expect(resolveSettings({ fontFamily }).fontFamily).toBe(fontFamily);
+    }
   });
 });

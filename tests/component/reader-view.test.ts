@@ -42,7 +42,9 @@ describe("reader view", () => {
     ].map((option) => option.textContent);
     expect(fontOptions).toEqual([
       "衬线（系统默认）",
-      "非衬线（网页默认）",
+      "无衬线（系统默认）",
+      "中文宋体",
+      "网页原字体",
     ]);
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();

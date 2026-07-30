@@ -1,5 +1,7 @@
 import {
+  CHINESE_SONG_FONT,
   PAGE_DEFAULT_FONT,
+  SYSTEM_SANS_FONT,
   SYSTEM_SERIF_FONT,
   type ReaderSettings,
   type ReaderTheme,
@@ -90,7 +92,9 @@ export function createAppearancePopover(
   const font = element("select", { "data-setting": "font-family" });
   const fonts = [
     ["衬线（系统默认）", SYSTEM_SERIF_FONT],
-    ["非衬线（网页默认）", PAGE_DEFAULT_FONT],
+    ["无衬线（系统默认）", SYSTEM_SANS_FONT],
+    ["中文宋体", CHINESE_SONG_FONT],
+    ["网页原字体", PAGE_DEFAULT_FONT],
   ];
   for (const [label, value] of fonts) {
     const option = element("option");

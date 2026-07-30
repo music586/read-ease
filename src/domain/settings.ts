@@ -14,6 +14,10 @@ export interface ReaderSettings {
 export type SiteSettingsOverride = Partial<ReaderSettings>;
 
 export const SYSTEM_SERIF_FONT = "serif";
+export const SYSTEM_SANS_FONT =
+  'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+export const CHINESE_SONG_FONT =
+  '"Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", SimSun, serif';
 export const PAGE_DEFAULT_FONT =
   "var(--re-page-font-family, ui-sans-serif, system-ui, sans-serif)";
 
@@ -33,10 +37,13 @@ export function resolveSettings(
   site: SiteSettingsOverride = {},
 ): ReaderSettings {
   const resolved = { ...DEFAULT_SETTINGS, ...global, ...site };
-  if (
-    resolved.fontFamily !== SYSTEM_SERIF_FONT &&
-    resolved.fontFamily !== PAGE_DEFAULT_FONT
-  ) {
+  const supportedFonts = new Set([
+    SYSTEM_SERIF_FONT,
+    SYSTEM_SANS_FONT,
+    CHINESE_SONG_FONT,
+    PAGE_DEFAULT_FONT,
+  ]);
+  if (!supportedFonts.has(resolved.fontFamily)) {
     resolved.fontFamily = resolved.fontFamily.includes("sans")
       ? PAGE_DEFAULT_FONT
       : SYSTEM_SERIF_FONT;
