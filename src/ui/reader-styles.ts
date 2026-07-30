@@ -100,6 +100,11 @@ export const READER_CSS = `
   .field select, .field input[type=range] { width: 100%; accent-color: #6d7c61; }
   .field output { text-align: right; color: var(--re-foreground); }
   .font-field { grid-template-columns: 58px 1fr; }
+  .width-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: -2px 0 12px 66px; }
+  .width-presets button { display: grid; gap: 3px; padding: 7px 3px; border: 1px solid color-mix(in srgb, var(--re-foreground) 14%, transparent); border-radius: 7px; color: var(--re-muted); }
+  .width-presets button:hover { background: color-mix(in srgb, var(--re-foreground) 7%, transparent); }
+  .width-presets button[aria-pressed=true] { color: var(--re-foreground); border-color: #6d7c61; background: color-mix(in srgb, #6d7c61 14%, transparent); }
+  .width-presets small { font-size: 10px; font-weight: 500; opacity: .78; }
   select { min-width: 0; padding: 7px; border: 1px solid color-mix(in srgb, var(--re-foreground) 14%, transparent); border-radius: 8px; background: var(--re-background); color: var(--re-foreground); }
   .popover-footer { border-top: 1px solid color-mix(in srgb, var(--re-foreground) 12%, transparent); margin-top: 14px; padding-top: 12px; display: grid; gap: 10px; }
   .checkbox { display: flex; align-items: center; gap: 8px; color: var(--re-muted); cursor: pointer; }

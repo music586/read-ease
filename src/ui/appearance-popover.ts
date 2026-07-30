@@ -39,6 +39,13 @@ const RANGE_FIELDS: Array<{
   { key: "pageMargin", label: "边距", min: 12, max: 96, step: 4 },
 ];
 
+const WIDTH_PRESETS = [
+  { label: "紧凑", value: 640 },
+  { label: "标准", value: 720 },
+  { label: "宽松", value: 800 },
+  { label: "宽屏", value: 920 },
+] as const;
+
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   attributes: Record<string, string> = {},
@@ -140,6 +147,24 @@ export function createAppearancePopover(
     container.append(row);
   }
 
+  const widthPresets = element("div", { class: "width-presets" });
+  const widthPresetButtons = new Map<number, HTMLButtonElement>();
+  for (const preset of WIDTH_PRESETS) {
+    const button = element("button", {
+      type: "button",
+      "data-width-preset": String(preset.value),
+      title: `${preset.label} ${preset.value}px`,
+    });
+    button.innerHTML = `<span>${preset.label}</span><small>${preset.value}</small>`;
+    button.addEventListener("click", () => {
+      settings = { ...settings, contentWidth: preset.value };
+      emit();
+    });
+    widthPresetButtons.set(preset.value, button);
+    widthPresets.append(button);
+  }
+  container.append(widthPresets);
+
   const footer = element("div", { class: "popover-footer" });
   const siteLabel = element("label", { class: "checkbox" });
   const siteOnly = element("input", {
@@ -185,6 +210,12 @@ export function createAppearancePopover(
     }
     for (const [theme, button] of themeButtons) {
       button.setAttribute("aria-pressed", String(theme === next.theme));
+    }
+    for (const [width, button] of widthPresetButtons) {
+      button.setAttribute(
+        "aria-pressed",
+        String(width === next.contentWidth),
+      );
     }
   }
 

@@ -21,13 +21,14 @@ describe("reader view", () => {
     const source = document.createElement("main");
     source.textContent = "Original page";
     document.body.append(source);
+    const onSettingsChange = vi.fn();
     const handle = mountReaderView(
       article,
       article.contentHtml,
       DEFAULT_SETTINGS,
       {
         onExit: vi.fn(),
-        onSettingsChange: vi.fn(),
+        onSettingsChange,
         onResetSettings: vi.fn(),
         onEditRule: vi.fn(),
         onAutoEnterChange: vi.fn(),
@@ -50,6 +51,22 @@ describe("reader view", () => {
       '[data-theme="gray"]',
     );
     expect(grayTheme?.title).toBe("灰色");
+    const widthPresets = [
+      ...(host?.shadowRoot?.querySelectorAll<HTMLButtonElement>(
+        "[data-width-preset]",
+      ) ?? []),
+    ];
+    expect(widthPresets.map((button) => button.dataset.widthPreset)).toEqual([
+      "640",
+      "720",
+      "800",
+      "920",
+    ]);
+    widthPresets[2]?.click();
+    expect(onSettingsChange).toHaveBeenCalledWith(
+      expect.objectContaining({ contentWidth: 800 }),
+      "global",
+    );
     const readerCss = host?.shadowRoot?.querySelector("style")?.textContent ?? "";
     expect(readerCss).toContain("--re-outer-gap: clamp(20px, 3vw, 44px)");
     expect(readerCss).toContain(
