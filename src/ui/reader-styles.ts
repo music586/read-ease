@@ -70,7 +70,7 @@ export const READER_CSS = `
     padding: 72px var(--re-panel-padding) 120px;
     background: var(--re-surface);
     box-shadow: 0 0 34px #0002;
-    border-radius: 10px;
+    border-radius: 3px;
   }
   .source { color: var(--re-muted); font: 600 12px/1.4 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; }
   h1.title { margin: 12px 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.14; letter-spacing: -.035em; }
@@ -111,7 +111,7 @@ export const READER_CSS = `
       width: calc(100% - 16px);
       min-height: calc(100vh - 2 * var(--re-outer-gap));
       padding: 82px max(20px, var(--re-page-margin)) 90px;
-      border-radius: 7px;
+      border-radius: 2px;
     }
     .popover { left: 16px; right: 16px; width: auto; }
   }

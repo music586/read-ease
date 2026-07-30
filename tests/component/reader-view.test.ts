@@ -55,6 +55,7 @@ describe("reader view", () => {
     expect(readerCss).toContain(
       "min-height: calc(100vh - 2 * var(--re-outer-gap))",
     );
+    expect(readerCss).toContain("border-radius: 3px");
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");
