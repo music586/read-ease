@@ -43,4 +43,8 @@ describe("settings", () => {
       expect(resolveSettings({ fontFamily }).fontFamily).toBe(fontFamily);
     }
   });
+
+  it("preserves the gray reading theme", () => {
+    expect(resolveSettings({ theme: "gray" }).theme).toBe("gray");
+  });
 });

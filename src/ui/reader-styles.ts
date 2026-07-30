@@ -1,15 +1,41 @@
 import type { ReaderSettings } from "../domain/settings";
 
 const THEMES = {
-  light: { background: "#fbfbfa", foreground: "#252422", muted: "#716d67", panel: "#ffffff" },
-  sepia: { background: "#f4efe4", foreground: "#342f29", muted: "#7b7268", panel: "#fffdf8" },
-  dark: { background: "#171819", foreground: "#dedbd5", muted: "#99958e", panel: "#242526" },
+  light: {
+    background: "#efefed",
+    surface: "#fbfbfa",
+    foreground: "#252422",
+    muted: "#716d67",
+    panel: "#ffffff",
+  },
+  sepia: {
+    background: "#e7e0d3",
+    surface: "#f4efe4",
+    foreground: "#342f29",
+    muted: "#7b7268",
+    panel: "#fffdf8",
+  },
+  gray: {
+    background: "#292a2b",
+    surface: "#4b4b4d",
+    foreground: "#dedede",
+    muted: "#c5c5c7",
+    panel: "#565658",
+  },
+  dark: {
+    background: "#111213",
+    surface: "#171819",
+    foreground: "#dedbd5",
+    muted: "#99958e",
+    panel: "#242526",
+  },
 } as const;
 
 export function settingsVariables(settings: ReaderSettings): string {
   const theme = THEMES[settings.theme];
   return [
     `--re-background:${theme.background}`,
+    `--re-surface:${theme.surface}`,
     `--re-foreground:${theme.foreground}`,
     `--re-muted:${theme.muted}`,
     `--re-panel:${theme.panel}`,
@@ -20,6 +46,7 @@ export function settingsVariables(settings: ReaderSettings): string {
     `--re-paragraph-spacing:${settings.paragraphSpacing}em`,
     `--re-content-width:${settings.contentWidth}px`,
     `--re-page-margin:${settings.pageMargin}px`,
+    "--re-panel-padding:clamp(28px, 6vw, 108px)",
   ].join(";");
 }
 
@@ -33,8 +60,14 @@ export const READER_CSS = `
     letter-spacing: var(--re-letter-spacing); line-height: var(--re-line-height);
   }
   .article {
-    width: min(var(--re-content-width), calc(100% - 2 * var(--re-page-margin)));
-    margin: 0 auto; padding: 72px 0 120px;
+    width: min(
+      calc(var(--re-content-width) + 2 * var(--re-panel-padding)),
+      calc(100% - 2 * var(--re-page-margin))
+    );
+    min-height: 100vh; margin: 0 auto;
+    padding: 72px var(--re-panel-padding) 120px;
+    background: var(--re-surface);
+    box-shadow: 0 0 34px #0002;
   }
   .source { color: var(--re-muted); font: 600 12px/1.4 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; }
   h1.title { margin: 12px 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.14; letter-spacing: -.035em; }
@@ -57,7 +90,7 @@ export const READER_CSS = `
   .popover { position: fixed; top: 62px; right: 20px; z-index: 3; width: 282px; padding: 18px; border: 1px solid color-mix(in srgb, var(--re-foreground) 12%, transparent); border-radius: 16px; background: var(--re-panel); box-shadow: 0 18px 48px #0004; font: 13px/1.35 ui-sans-serif, system-ui; }
   .popover[hidden] { display: none; }
   .popover h2 { margin: 0 0 14px; font-size: 14px; }
-  .themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+  .themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
   .theme { height: 34px; border-radius: 9px; border: 2px solid transparent; }
   .theme[aria-pressed=true] { border-color: #6d7c61; }
   .field { display: grid; grid-template-columns: 58px 1fr 38px; align-items: center; gap: 8px; margin: 10px 0; color: var(--re-muted); }
@@ -70,8 +103,9 @@ export const READER_CSS = `
   .link-button { text-align: left; padding: 4px 0; color: var(--re-muted); }
   .link-button:hover { color: var(--re-foreground); }
   @media (max-width: 640px) {
-    .article { padding-top: 82px; }
+    .article {
+      width: 100%; padding: 82px max(20px, var(--re-page-margin)) 90px;
+    }
     .popover { left: 16px; right: 16px; width: auto; }
   }
 `;
-

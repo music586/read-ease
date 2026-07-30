@@ -46,6 +46,10 @@ describe("reader view", () => {
       "中文宋体",
       "网页原字体",
     ]);
+    const grayTheme = host?.shadowRoot?.querySelector<HTMLButtonElement>(
+      '[data-theme="gray"]',
+    );
+    expect(grayTheme?.title).toBe("灰色");
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");

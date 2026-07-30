@@ -68,14 +68,21 @@ export function createAppearancePopover(
   const themeColors: Record<ReaderTheme, string> = {
     light: "#fbfbfa",
     sepia: "#f0e5cf",
+    gray: "#4b4b4d",
     dark: "#242526",
   };
-  for (const theme of ["light", "sepia", "dark"] as const) {
+  const themeLabels: Record<ReaderTheme, string> = {
+    light: "浅色",
+    sepia: "米色",
+    gray: "灰色",
+    dark: "深色",
+  };
+  for (const theme of ["light", "sepia", "gray", "dark"] as const) {
     const button = element("button", {
       class: "theme",
       type: "button",
       "data-theme": theme,
-      title: theme,
+      title: themeLabels[theme],
     });
     button.style.background = themeColors[theme];
     button.addEventListener("click", () => {

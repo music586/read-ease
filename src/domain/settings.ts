@@ -1,4 +1,4 @@
-export type ReaderTheme = "light" | "sepia" | "dark";
+export type ReaderTheme = "light" | "sepia" | "gray" | "dark";
 
 export interface ReaderSettings {
   theme: ReaderTheme;
