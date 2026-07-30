@@ -56,6 +56,11 @@ describe("reader view", () => {
       "min-height: calc(100vh - 2 * var(--re-outer-gap))",
     );
     expect(readerCss).toContain("border-radius: 3px");
+    handle.updateSettings({ ...DEFAULT_SETTINGS, pageMargin: 64 });
+    const overlay =
+      host?.shadowRoot?.querySelector<HTMLElement>(".overlay") ?? null;
+    expect(overlay?.style.getPropertyValue("--re-page-margin")).toBe("64px");
+    expect(overlay?.style.getPropertyValue("--re-panel-padding")).toBe("64px");
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");

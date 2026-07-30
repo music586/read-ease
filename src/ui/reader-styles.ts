@@ -46,7 +46,7 @@ export function settingsVariables(settings: ReaderSettings): string {
     `--re-paragraph-spacing:${settings.paragraphSpacing}em`,
     `--re-content-width:${settings.contentWidth}px`,
     `--re-page-margin:${settings.pageMargin}px`,
-    "--re-panel-padding:clamp(28px, 6vw, 108px)",
+    `--re-panel-padding:${settings.pageMargin}px`,
   ].join(";");
 }
 
