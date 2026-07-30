@@ -8,6 +8,7 @@ import { SettingsStore } from "../storage/settings-store";
 import type { SettingsScope } from "../ui/appearance-popover";
 import { showErrorNotice, type FailureAction } from "../ui/error-notice";
 import { mountReaderView, type ReaderViewHandle } from "../ui/reader-view";
+import { waitForPageStability } from "./page-stability";
 
 type ControllerState = "idle" | "extracting" | "reading" | "selecting";
 
@@ -132,7 +133,10 @@ export class ReaderController {
 
   private async handleFailure(action: FailureAction): Promise<void> {
     this.removeNotice = null;
-    if (action === "retry") await this.enter();
+    if (action === "retry") {
+      await waitForPageStability();
+      await this.enter();
+    }
     if (action === "select-content") await this.startRuleSelection();
     if (action === "advanced-rule") await this.startRuleSelection(true);
   }

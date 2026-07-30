@@ -2,7 +2,8 @@ export type ExtractionSource =
   | "temporary-rule"
   | "user-rule"
   | "builtin-rule"
-  | "readability";
+  | "readability"
+  | "heuristic";
 
 export interface Article {
   title: string;
@@ -40,4 +41,3 @@ export function readingMinutes(text: string): number {
   const cjkCharacters = text.match(/[\u3400-\u9fff]/g)?.length ?? 0;
   return Math.max(1, Math.ceil(latinWords / 220 + cjkCharacters / 400));
 }
-

@@ -5,6 +5,7 @@ import type {
 } from "../domain/article";
 import type { SiteRule } from "../domain/rules";
 import { articleQuality } from "./quality";
+import { extractWithHeuristic } from "./heuristic";
 import { extractWithReadability } from "./readability";
 import { extractWithRule } from "./rule-extractor";
 
@@ -35,14 +36,44 @@ export function extractArticle(
     warnings.push({ source, message: "规则未能提取到足够的正文内容" });
   }
 
-  const article = extractWithReadability(document, url);
-  if (article && articleQuality(article.textContent, article.contentHtml).pass) {
-    return { ok: true, article, source: "readability", warnings };
+  const readabilityArticle = extractWithReadability(document, url);
+  if (
+    readabilityArticle &&
+    articleQuality(
+      readabilityArticle.textContent,
+      readabilityArticle.contentHtml,
+    ).pass
+  ) {
+    return {
+      ok: true,
+      article: readabilityArticle,
+      source: "readability",
+      warnings,
+    };
+  }
+  if (readabilityArticle) {
+    warnings.push({
+      source: "readability",
+      message: "Readability 提取结果未达到正文质量要求",
+    });
+  }
+
+  const heuristicArticle = extractWithHeuristic(document, url);
+  if (
+    heuristicArticle &&
+    articleQuality(heuristicArticle.textContent, heuristicArticle.contentHtml)
+      .pass
+  ) {
+    return {
+      ok: true,
+      article: heuristicArticle,
+      source: "heuristic",
+      warnings,
+    };
   }
   return {
     ok: false,
-    error: article ? "LOW_QUALITY" : "NO_ARTICLE",
+    error: readabilityArticle || heuristicArticle ? "LOW_QUALITY" : "NO_ARTICLE",
     warnings,
   };
 }
-
