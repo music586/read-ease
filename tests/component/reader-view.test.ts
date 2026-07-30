@@ -50,6 +50,11 @@ describe("reader view", () => {
       '[data-theme="gray"]',
     );
     expect(grayTheme?.title).toBe("灰色");
+    const readerCss = host?.shadowRoot?.querySelector("style")?.textContent ?? "";
+    expect(readerCss).toContain("--re-outer-gap: clamp(20px, 3vw, 44px)");
+    expect(readerCss).toContain(
+      "min-height: calc(100vh - 2 * var(--re-outer-gap))",
+    );
     handle.unmount();
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");

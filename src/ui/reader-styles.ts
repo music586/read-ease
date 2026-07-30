@@ -58,16 +58,19 @@ export const READER_CSS = `
     background: var(--re-background); color: var(--re-foreground);
     font-family: var(--re-font-family); font-size: var(--re-font-size);
     letter-spacing: var(--re-letter-spacing); line-height: var(--re-line-height);
+    --re-outer-gap: clamp(20px, 3vw, 44px);
+    padding: var(--re-outer-gap) 0;
   }
   .article {
     width: min(
       calc(var(--re-content-width) + 2 * var(--re-panel-padding)),
       calc(100% - 2 * var(--re-page-margin))
     );
-    min-height: 100vh; margin: 0 auto;
+    min-height: calc(100vh - 2 * var(--re-outer-gap)); margin: 0 auto;
     padding: 72px var(--re-panel-padding) 120px;
     background: var(--re-surface);
     box-shadow: 0 0 34px #0002;
+    border-radius: 10px;
   }
   .source { color: var(--re-muted); font: 600 12px/1.4 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; }
   h1.title { margin: 12px 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.14; letter-spacing: -.035em; }
@@ -103,8 +106,12 @@ export const READER_CSS = `
   .link-button { text-align: left; padding: 4px 0; color: var(--re-muted); }
   .link-button:hover { color: var(--re-foreground); }
   @media (max-width: 640px) {
+    .overlay { --re-outer-gap: 10px; }
     .article {
-      width: 100%; padding: 82px max(20px, var(--re-page-margin)) 90px;
+      width: calc(100% - 16px);
+      min-height: calc(100vh - 2 * var(--re-outer-gap));
+      padding: 82px max(20px, var(--re-page-margin)) 90px;
+      border-radius: 7px;
     }
     .popover { left: 16px; right: 16px; width: auto; }
   }
