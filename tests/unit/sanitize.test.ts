@@ -30,4 +30,23 @@ describe("article sanitizer", () => {
     );
     expect(anotherSite).toContain("请务必在总结开头");
   });
+
+  it("removes Caixin listening, AI question, and script conversion modules", () => {
+    const article = `
+      <div><img src="/language.png" alt="简繁切换"></div>
+      <section><div><img src="/audio.png"></div><h2>听报道</h2></section>
+      <aside><h2>AI猜你想问</h2></aside>
+      <p>正文中可以正常讨论 AI 猜你想问功能，但不能误删正文。</p>`;
+
+    const clean = sanitizeArticleHtml(
+      article,
+      new URL("https://www.caixin.com/2026/article.html"),
+    );
+    expect(clean).not.toContain("简繁切换");
+    expect(clean).not.toContain("language.png");
+    expect(clean).not.toContain("audio.png");
+    expect(clean).not.toContain("<h2>听报道</h2>");
+    expect(clean).not.toContain("<h2>AI猜你想问</h2>");
+    expect(clean).toContain("不能误删正文");
+  });
 });

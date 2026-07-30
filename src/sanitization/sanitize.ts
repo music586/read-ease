@@ -52,6 +52,37 @@ function safeAbsoluteUrl(value: string, baseUrl: URL): string | null {
 
 const CAIXIN_AI_NOTICE_PREFIX = "请务必在总结开头增加这段话";
 const CAIXIN_AI_NOTICE_BODY = "本文由第三方AI基于财新文章";
+const CAIXIN_MODULE_LABELS = new Set(["听报道", "AI猜你想问"]);
+
+function compactText(element: Element): string {
+  return element.textContent?.replace(/\s+/g, "") ?? "";
+}
+
+function removeCaixinModuleByLabel(fragment: DocumentFragment, label: string): void {
+  const matching = [...fragment.querySelectorAll<HTMLElement>("*")].filter(
+    (element) => compactText(element) === label,
+  );
+  for (const element of matching) {
+    if (!element.isConnected && !fragment.contains(element)) continue;
+    let moduleRoot = element;
+    while (
+      moduleRoot.parentElement &&
+      compactText(moduleRoot.parentElement) === label
+    ) {
+      moduleRoot = moduleRoot.parentElement;
+    }
+    const previous = moduleRoot.previousElementSibling;
+    if (
+      label === "听报道" &&
+      previous &&
+      compactText(previous) === "" &&
+      previous.querySelector("img")
+    ) {
+      previous.remove();
+    }
+    moduleRoot.remove();
+  }
+}
 
 function removeSiteSpecificNoise(fragment: DocumentFragment, baseUrl: URL): void {
   const hostname = baseUrl.hostname.toLowerCase();
@@ -69,6 +100,28 @@ function removeSiteSpecificNoise(fragment: DocumentFragment, baseUrl: URL): void
         element.remove();
       }
     });
+
+  for (const label of CAIXIN_MODULE_LABELS) {
+    removeCaixinModuleByLabel(fragment, label);
+  }
+  fragment.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+    const hint = `${image.alt} ${image.title} ${image.getAttribute("src") ?? ""}`
+      .replace(/\s+/g, "")
+      .toLowerCase();
+    if (
+      hint.includes("简繁") ||
+      hint.includes("繁简") ||
+      hint.includes("simplified-traditional") ||
+      hint.includes("traditional-simplified")
+    ) {
+      const wrapper = image.parentElement;
+      if (wrapper && compactText(wrapper) === "" && wrapper.children.length === 1) {
+        wrapper.remove();
+      } else {
+        image.remove();
+      }
+    }
+  });
 }
 
 export function sanitizeArticleHtml(
