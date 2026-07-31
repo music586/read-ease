@@ -86,6 +86,9 @@ describe("reader view", () => {
       "min-height: calc(100vh - 2 * var(--re-outer-gap))",
     );
     expect(readerCss).toContain("border-radius: 3px");
+    expect(readerCss).toContain(
+      ".content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }",
+    );
     handle.updateSettings({ ...DEFAULT_SETTINGS, pageMargin: 64 });
     const overlay =
       host?.shadowRoot?.querySelector<HTMLElement>(".overlay") ?? null;
