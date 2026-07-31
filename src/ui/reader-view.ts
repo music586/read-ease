@@ -29,6 +29,18 @@ function textLine(values: Array<string | null | undefined>): string {
   return values.filter(Boolean).join(" · ");
 }
 
+export function updateWideImageLayout(content: HTMLElement): void {
+  const contentWidth = content.clientWidth;
+  if (contentWidth <= 0) return;
+  content.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+    const sourceWidth = image.naturalWidth || Number(image.getAttribute("width"));
+    image.toggleAttribute(
+      "data-read-ease-wide",
+      sourceWidth >= contentWidth * 0.8,
+    );
+  });
+}
+
 export function mountReaderView(
   article: Article,
   contentHtml: string,
@@ -85,6 +97,9 @@ export function mountReaderView(
   const content = document.createElement("div");
   content.className = "content";
   content.innerHTML = contentHtml;
+  content.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
+    image.addEventListener("load", () => updateWideImageLayout(content));
+  });
   articleElement.append(source, title, meta, content);
 
   const popover = createAppearancePopover(settings, {
@@ -112,6 +127,9 @@ export function mountReaderView(
   overlay.append(pill, popover.element, articleElement);
   shadow.append(style, overlay);
   document.documentElement.append(host);
+  updateWideImageLayout(content);
+  const resizeObserver = new ResizeObserver(() => updateWideImageLayout(content));
+  resizeObserver.observe(content);
 
   return {
     updateSettings(next) {
@@ -122,6 +140,7 @@ export function mountReaderView(
       popover.element.hidden = true;
     },
     unmount() {
+      resizeObserver.disconnect();
       host.remove();
     },
   };

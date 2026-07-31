@@ -80,6 +80,7 @@ export const READER_CSS = `
   .content p, .content li { text-align: var(--re-text-align); text-justify: inter-ideograph; }
   .content h2, .content h3, .content h4 { margin: 2em 0 .75em; line-height: 1.3; }
   .content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }
+  .content img[data-read-ease-wide] { width: 100%; }
   .content figure { margin: 2em 0; }
   .content figcaption { color: var(--re-muted); font-size: .78em; text-align: center; }
   .content a { color: inherit; text-decoration-color: var(--re-muted); text-underline-offset: .18em; }

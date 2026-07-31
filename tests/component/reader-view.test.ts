@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Article } from "../../src/domain/article";
 import { DEFAULT_SETTINGS } from "../../src/domain/settings";
-import { mountReaderView } from "../../src/ui/reader-view";
+import {
+  mountReaderView,
+  updateWideImageLayout,
+} from "../../src/ui/reader-view";
 
 const article: Article = {
   title: "A quiet article",
@@ -17,6 +20,19 @@ const article: Article = {
 };
 
 describe("reader view", () => {
+  it("expands images that are at least 80 percent of the content width", () => {
+    const content = document.createElement("div");
+    const wide = document.createElement("img");
+    const small = document.createElement("img");
+    Object.defineProperty(content, "clientWidth", { value: 1000 });
+    Object.defineProperty(wide, "naturalWidth", { value: 800 });
+    Object.defineProperty(small, "naturalWidth", { value: 799 });
+    content.append(wide, small);
+    updateWideImageLayout(content);
+    expect(wide.hasAttribute("data-read-ease-wide")).toBe(true);
+    expect(small.hasAttribute("data-read-ease-wide")).toBe(false);
+  });
+
   it("mounts isolated content and unmounts without changing the source page", () => {
     const source = document.createElement("main");
     source.textContent = "Original page";
