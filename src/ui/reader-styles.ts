@@ -86,6 +86,7 @@ export const READER_CSS = `
     max-width: none;
     margin-left: calc(-1 * var(--re-effective-padding));
     margin-right: calc(-1 * var(--re-effective-padding));
+    border-radius: 0;
   }
   .content figure { margin: 2em 0; }
   .content figcaption { color: var(--re-muted); font-size: .78em; text-align: center; }
