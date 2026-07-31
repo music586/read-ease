@@ -105,6 +105,12 @@ describe("reader view", () => {
     expect(readerCss).toContain(
       ".content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }",
     );
+    expect(readerCss).toContain(
+      "width: calc(100% + 2 * var(--re-effective-padding))",
+    );
+    expect(readerCss).toContain(
+      "margin-left: calc(-1 * var(--re-effective-padding))",
+    );
     handle.updateSettings({ ...DEFAULT_SETTINGS, pageMargin: 64 });
     const overlay =
       host?.shadowRoot?.querySelector<HTMLElement>(".overlay") ?? null;

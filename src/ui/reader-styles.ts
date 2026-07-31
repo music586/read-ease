@@ -63,12 +63,13 @@ export const READER_CSS = `
     padding: var(--re-outer-gap) 0;
   }
   .article {
+    --re-effective-padding: var(--re-panel-padding);
     width: min(
       calc(var(--re-content-width) + 2 * var(--re-panel-padding)),
       calc(100% - 2 * var(--re-page-margin))
     );
     min-height: calc(100vh - 2 * var(--re-outer-gap)); margin: 0 auto;
-    padding: 72px var(--re-panel-padding) 120px;
+    padding: 72px var(--re-effective-padding) 120px;
     background: var(--re-surface);
     box-shadow: 0 0 34px #0002;
     border-radius: 3px;
@@ -80,7 +81,12 @@ export const READER_CSS = `
   .content p, .content li { text-align: var(--re-text-align); text-justify: inter-ideograph; }
   .content h2, .content h3, .content h4 { margin: 2em 0 .75em; line-height: 1.3; }
   .content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }
-  .content img[data-read-ease-wide] { width: 100%; }
+  .content img[data-read-ease-wide] {
+    width: calc(100% + 2 * var(--re-effective-padding));
+    max-width: none;
+    margin-left: calc(-1 * var(--re-effective-padding));
+    margin-right: calc(-1 * var(--re-effective-padding));
+  }
   .content figure { margin: 2em 0; }
   .content figcaption { color: var(--re-muted); font-size: .78em; text-align: center; }
   .content a { color: inherit; text-decoration-color: var(--re-muted); text-underline-offset: .18em; }
@@ -119,9 +125,10 @@ export const READER_CSS = `
   @media (max-width: 640px) {
     .overlay { --re-outer-gap: 10px; }
     .article {
+      --re-effective-padding: max(20px, var(--re-page-margin));
       width: calc(100% - 16px);
       min-height: calc(100vh - 2 * var(--re-outer-gap));
-      padding: 82px max(20px, var(--re-page-margin)) 90px;
+      padding: 82px var(--re-effective-padding) 90px;
       border-radius: 2px;
     }
     .popover { left: 16px; right: 16px; width: auto; }
