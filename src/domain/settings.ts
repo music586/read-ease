@@ -9,6 +9,7 @@ export interface ReaderSettings {
   paragraphSpacing: number;
   contentWidth: number;
   pageMargin: number;
+  textJustify: boolean;
 }
 
 export type SiteSettingsOverride = Partial<ReaderSettings>;
@@ -30,6 +31,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   paragraphSpacing: 1.15,
   contentWidth: 720,
   pageMargin: 32,
+  textJustify: false,
 };
 
 export function resolveSettings(

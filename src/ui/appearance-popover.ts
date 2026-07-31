@@ -167,6 +167,16 @@ export function createAppearancePopover(
   container.append(widthPresets);
 
   const footer = element("div", { class: "popover-footer" });
+  const justifyLabel = element("label", { class: "checkbox" });
+  const justifyCheckbox = element("input", {
+    type: "checkbox",
+    "data-setting": "text-justify",
+  });
+  justifyCheckbox.addEventListener("change", () => {
+    settings = { ...settings, textJustify: justifyCheckbox.checked };
+    emit();
+  });
+  justifyLabel.append(justifyCheckbox, document.createTextNode("正文两端对齐"));
   const siteLabel = element("label", { class: "checkbox" });
   const siteOnly = element("input", {
     type: "checkbox",
@@ -205,7 +215,14 @@ export function createAppearancePopover(
   const reset = element("button", { type: "button", class: "link-button" });
   reset.textContent = "恢复默认设置";
   reset.addEventListener("click", () => callbacks.onReset(scope()));
-  footer.append(copyMarkdown, siteLabel, autoLabel, editRule, reset);
+  footer.append(
+    copyMarkdown,
+    justifyLabel,
+    siteLabel,
+    autoLabel,
+    editRule,
+    reset,
+  );
   container.append(footer);
 
   function scope(): SettingsScope {
@@ -219,6 +236,7 @@ export function createAppearancePopover(
 
   function update(next: ReaderSettings): void {
     settings = next;
+    justifyCheckbox.checked = next.textJustify;
     font.value = next.fontFamily;
     for (const [key, input] of rangeInputs) {
       input.value = String(next[key]);

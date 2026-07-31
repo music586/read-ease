@@ -71,6 +71,15 @@ describe("reader view", () => {
       host?.shadowRoot?.querySelector('[data-action="copy-markdown"]')
         ?.textContent,
     ).toBe("复制 Markdown");
+    const justify = host?.shadowRoot?.querySelector<HTMLInputElement>(
+      '[data-setting="text-justify"]',
+    );
+    expect(justify?.checked).toBe(false);
+    justify?.click();
+    expect(onSettingsChange).toHaveBeenCalledWith(
+      expect.objectContaining({ textJustify: true }),
+      "global",
+    );
     const readerCss = host?.shadowRoot?.querySelector("style")?.textContent ?? "";
     expect(readerCss).toContain("--re-outer-gap: clamp(20px, 3vw, 44px)");
     expect(readerCss).toContain(

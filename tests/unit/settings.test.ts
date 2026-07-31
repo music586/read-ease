@@ -47,4 +47,9 @@ describe("settings", () => {
   it("preserves the gray reading theme", () => {
     expect(resolveSettings({ theme: "gray" }).theme).toBe("gray");
   });
+
+  it("defaults text alignment to left and preserves justify selection", () => {
+    expect(DEFAULT_SETTINGS.textJustify).toBe(false);
+    expect(resolveSettings({ textJustify: true }).textJustify).toBe(true);
+  });
 });

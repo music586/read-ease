@@ -47,6 +47,7 @@ export function settingsVariables(settings: ReaderSettings): string {
     `--re-content-width:${settings.contentWidth}px`,
     `--re-page-margin:${settings.pageMargin}px`,
     `--re-panel-padding:${settings.pageMargin}px`,
+    `--re-text-align:${settings.textJustify ? "justify" : "start"}`,
   ].join(";");
 }
 
@@ -76,6 +77,7 @@ export const READER_CSS = `
   h1.title { margin: 12px 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.14; letter-spacing: -.035em; }
   .meta { color: var(--re-muted); font: 14px/1.5 ui-sans-serif, system-ui; margin-bottom: 42px; }
   .content p { margin: 0 0 var(--re-paragraph-spacing); }
+  .content p, .content li { text-align: var(--re-text-align); text-justify: inter-ideograph; }
   .content h2, .content h3, .content h4 { margin: 2em 0 .75em; line-height: 1.3; }
   .content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 10px; }
   .content figure { margin: 2em 0; }
