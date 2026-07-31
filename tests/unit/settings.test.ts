@@ -10,6 +10,14 @@ import {
 } from "../../src/domain/settings";
 
 describe("settings", () => {
+  it("defaults to light, system sans-serif, and justified text", () => {
+    expect(DEFAULT_SETTINGS).toMatchObject({
+      theme: "light",
+      fontFamily: SYSTEM_SANS_FONT,
+      textJustify: true,
+    });
+  });
+
   it("applies only explicit site overrides", () => {
     const global = { ...DEFAULT_SETTINGS, fontSize: 20, lineHeight: 1.9 };
     expect(resolveSettings(global, { fontSize: 17 })).toMatchObject({
@@ -48,8 +56,7 @@ describe("settings", () => {
     expect(resolveSettings({ theme: "gray" }).theme).toBe("gray");
   });
 
-  it("defaults text alignment to left and preserves justify selection", () => {
-    expect(DEFAULT_SETTINGS.textJustify).toBe(false);
-    expect(resolveSettings({ textJustify: true }).textJustify).toBe(true);
+  it("preserves an explicit left-alignment selection", () => {
+    expect(resolveSettings({ textJustify: false }).textJustify).toBe(false);
   });
 });

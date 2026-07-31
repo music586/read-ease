@@ -41,6 +41,139 @@ export function updateWideImageLayout(content: HTMLElement): void {
   });
 }
 
+const PROSE_BLOCK_ELEMENTS =
+  "section, article, aside, p, blockquote, ul, ol, li, table, figure, pre, h1, h2, h3, h4, h5, h6";
+const MEDIA_ELEMENTS = "img, picture, figure, video, audio, table, iframe";
+
+export function normalizeProseBlocks(content: HTMLElement): void {
+  const sections = [...content.querySelectorAll<HTMLElement>("section")];
+  for (const section of sections) {
+    const belongsToNestedLayout = section.parentElement?.closest("section");
+    const hasBlockChild = [...section.children].some((child) =>
+      child.matches(PROSE_BLOCK_ELEMENTS),
+    );
+    const hasMediaChild = [...section.children].some((child) =>
+      child.matches(MEDIA_ELEMENTS),
+    );
+    if (
+      belongsToNestedLayout ||
+      hasBlockChild ||
+      hasMediaChild ||
+      !(section.textContent?.trim().length ?? 0)
+    ) {
+      continue;
+    }
+
+    const paragraph = content.ownerDocument.createElement("p");
+    for (const attribute of [...section.attributes]) {
+      paragraph.setAttribute(attribute.name, attribute.value);
+    }
+    paragraph.append(...section.childNodes);
+    section.replaceWith(paragraph);
+  }
+}
+
+function adjacentContentNode(
+  node: Node,
+  direction: "previousSibling" | "nextSibling",
+): Node | null {
+  let sibling = node[direction];
+  while (sibling?.nodeType === Node.TEXT_NODE && !sibling.textContent?.trim()) {
+    sibling = sibling[direction];
+  }
+  return sibling;
+}
+
+export function normalizeProseLineBreaks(content: HTMLElement): void {
+  content.querySelectorAll<HTMLElement>("p, blockquote, li").forEach((block) => {
+    if ((block.textContent?.trim().length ?? 0) < 40) return;
+    [...block.querySelectorAll("br")].forEach((lineBreak) => {
+      const previous = adjacentContentNode(lineBreak, "previousSibling");
+      const next = adjacentContentNode(lineBreak, "nextSibling");
+      const belongsToBlankLine =
+        previous instanceof HTMLBRElement || next instanceof HTMLBRElement;
+      if (belongsToBlankLine) return;
+
+      const previousCharacter = previous?.textContent?.trim().slice(-1) ?? "";
+      const nextCharacter = next?.textContent?.trim().slice(0, 1) ?? "";
+      const needsWordSeparator =
+        /[a-z0-9]/i.test(previousCharacter) && /[a-z0-9]/i.test(nextCharacter);
+
+      while (
+        lineBreak.previousSibling?.nodeType === Node.TEXT_NODE &&
+        !lineBreak.previousSibling.textContent?.trim()
+      ) {
+        lineBreak.previousSibling.remove();
+      }
+      while (
+        lineBreak.nextSibling?.nodeType === Node.TEXT_NODE &&
+        !lineBreak.nextSibling.textContent?.trim()
+      ) {
+        lineBreak.nextSibling.remove();
+      }
+      lineBreak.replaceWith(
+        document.createTextNode(needsWordSeparator ? " " : ""),
+      );
+    });
+
+    const textNodes: Text[] = [];
+    const needsSemanticSpace = (left: string, right: string): boolean =>
+      /[A-Za-z0-9,.;:!?)]/u.test(left) && /[A-Za-z0-9(]/u.test(right);
+    const collectTextNodes = (node: Node): void => {
+      if (
+        node instanceof HTMLElement &&
+        node.matches("code, pre")
+      ) {
+        return;
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textNode = node as Text;
+        textNode.textContent =
+          textNode.textContent?.replace(
+            /(\S)\s+(?=(\S))/gu,
+            (_match, left: string, right: string) =>
+              `${left}${needsSemanticSpace(left, right) ? " " : ""}`,
+          ) ?? "";
+        textNodes.push(textNode);
+        return;
+      }
+      [...node.childNodes].forEach(collectTextNodes);
+    };
+    collectTextNodes(block);
+
+    const meaningfulText = (index: number, step: -1 | 1): string => {
+      for (let cursor = index + step; textNodes[cursor]; cursor += step) {
+        const value = textNodes[cursor]?.textContent?.trim();
+        if (value) return value;
+      }
+      return "";
+    };
+
+    textNodes.forEach((textNode, index) => {
+      const previous = meaningfulText(index, -1).slice(-1);
+      const next = meaningfulText(index, 1).slice(0, 1);
+      let value = textNode.textContent ?? "";
+      if (!value.trim()) {
+        if (previous && next && !needsSemanticSpace(previous, next)) value = "";
+      } else {
+        if (
+          previous &&
+          !needsSemanticSpace(previous, value.trimStart()[0] ?? "")
+        ) {
+          value = value.trimStart();
+        }
+        if (
+          next &&
+          !needsSemanticSpace(value.trimEnd().slice(-1), next)
+        ) {
+          value = value.trimEnd();
+        }
+      }
+      textNode.textContent = value;
+    });
+  });
+}
+
 export function mountReaderView(
   article: Article,
   contentHtml: string,
@@ -96,7 +229,10 @@ export function mountReaderView(
   ]);
   const content = document.createElement("div");
   content.className = "content";
+  content.lang = "zh-CN";
   content.innerHTML = contentHtml;
+  normalizeProseBlocks(content);
+  normalizeProseLineBreaks(content);
   content.querySelectorAll<HTMLImageElement>("img").forEach((image) => {
     image.addEventListener("load", () => updateWideImageLayout(content));
   });
@@ -128,7 +264,9 @@ export function mountReaderView(
   shadow.append(style, overlay);
   document.documentElement.append(host);
   updateWideImageLayout(content);
-  const resizeObserver = new ResizeObserver(() => updateWideImageLayout(content));
+  const resizeObserver = new ResizeObserver(() => {
+    updateWideImageLayout(content);
+  });
   resizeObserver.observe(content);
 
   return {

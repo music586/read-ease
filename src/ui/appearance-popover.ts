@@ -41,10 +41,10 @@ const RANGE_FIELDS: Array<{
 ];
 
 const WIDTH_PRESETS = [
-  { label: "紧凑", value: 640 },
-  { label: "标准", value: 720 },
-  { label: "宽松", value: 800 },
-  { label: "宽屏", value: 920 },
+  { label: "紧凑", value: 640, margin: 40 },
+  { label: "标准", value: 720, margin: 52 },
+  { label: "宽松", value: 800, margin: 64 },
+  { label: "宽屏", value: 920, margin: 72 },
 ] as const;
 
 function element<K extends keyof HTMLElementTagNameMap>(
@@ -67,17 +67,52 @@ export function createAppearancePopover(
 } {
   let settings = initial;
   const container = element("section", { class: "popover", hidden: "" });
+  const header = element("header", { class: "popover-header" });
+  const titleBlock = element("div");
   const title = element("h2");
   title.textContent = "阅读外观";
-  container.append(title);
+  const subtitle = element("p", { class: "popover-subtitle" });
+  subtitle.textContent = "专注阅读，按你的习惯排版";
+  titleBlock.append(title, subtitle);
+  header.append(titleBlock);
+  container.append(header);
+
+  function createGroup(
+    section: string,
+    eyebrow: string,
+    heading: string,
+  ): HTMLElement {
+    const wrapper = element("section", {
+      class: "settings-section",
+      "data-section-wrapper": section,
+    });
+    const sectionHeading = element("div", { class: "section-heading" });
+    const eyebrowNode = element("span", { class: "section-eyebrow" });
+    eyebrowNode.textContent = eyebrow;
+    const headingNode = element("h3");
+    headingNode.textContent = heading;
+    sectionHeading.append(eyebrowNode, headingNode);
+    const group = element("div", {
+      class: "settings-group",
+      "data-section": section,
+    });
+    wrapper.append(sectionHeading, group);
+    container.append(wrapper);
+    return group;
+  }
+
+  const appearanceGroup = createGroup("appearance", "外观", "阅读环境");
 
   const themes = element("div", { class: "themes" });
   const themeButtons = new Map<ReaderTheme, HTMLButtonElement>();
-  const themeColors: Record<ReaderTheme, string> = {
-    light: "#fbfbfa",
-    sepia: "#f0e5cf",
-    gray: "#4b4b4d",
-    dark: "#242526",
+  const themeColors: Record<
+    ReaderTheme,
+    { background: string; paper: string }
+  > = {
+    light: { background: "#d9d9d7", paper: "#ffffff" },
+    sepia: { background: "#cfc2ab", paper: "#fff3dc" },
+    gray: { background: "#202124", paper: "#494a4d" },
+    dark: { background: "#050607", paper: "#171819" },
   };
   const themeLabels: Record<ReaderTheme, string> = {
     light: "浅色",
@@ -92,7 +127,14 @@ export function createAppearancePopover(
       "data-theme": theme,
       title: themeLabels[theme],
     });
-    button.style.background = themeColors[theme];
+    const swatch = element("span", { class: "theme-swatch" });
+    swatch.style.background = themeColors[theme].background;
+    const paper = element("span", { class: "theme-paper" });
+    paper.style.background = themeColors[theme].paper;
+    swatch.append(paper);
+    const label = element("span", { class: "theme-label" });
+    label.textContent = themeLabels[theme];
+    button.append(swatch, label);
     button.addEventListener("click", () => {
       settings = { ...settings, theme };
       emit();
@@ -100,10 +142,15 @@ export function createAppearancePopover(
     themeButtons.set(theme, button);
     themes.append(button);
   }
-  container.append(themes);
+  appearanceGroup.append(themes);
 
-  const fontRow = element("label", { class: "field font-field" });
-  fontRow.append(document.createTextNode("字体"));
+  const fontRow = element("label", { class: "setting-row font-field" });
+  const fontCopy = element("span", { class: "setting-copy" });
+  const fontTitle = element("span", { class: "setting-title" });
+  fontTitle.textContent = "字体";
+  const fontDescription = element("span", { class: "setting-description" });
+  fontDescription.textContent = "选择适合长时间阅读的字形";
+  fontCopy.append(fontTitle, fontDescription);
   const font = element("select", { "data-setting": "font-family" });
   const fonts = [
     ["衬线（系统默认）", SYSTEM_SERIF_FONT],
@@ -121,14 +168,19 @@ export function createAppearancePopover(
     settings = { ...settings, fontFamily: font.value };
     emit();
   });
-  fontRow.append(font);
-  container.append(fontRow);
+  fontRow.append(fontCopy, font);
+  appearanceGroup.append(fontRow);
+
+  const typographyGroup = createGroup("typography", "排版", "文字节奏");
+  const layoutGroup = createGroup("layout", "版面", "页面尺寸");
 
   const rangeInputs = new Map<keyof ReaderSettings, HTMLInputElement>();
   const outputs = new Map<keyof ReaderSettings, HTMLOutputElement>();
   for (const field of RANGE_FIELDS) {
-    const row = element("label", { class: "field" });
-    row.append(document.createTextNode(field.label));
+    const row = element("label", { class: "setting-row range-row" });
+    const fieldLabel = element("span", { class: "setting-title" });
+    fieldLabel.textContent = field.label;
+    const control = element("span", { class: "range-control" });
     const input = element("input", {
       type: "range",
       min: String(field.min),
@@ -144,8 +196,13 @@ export function createAppearancePopover(
     });
     rangeInputs.set(field.key, input);
     outputs.set(field.key, output);
-    row.append(input, output);
-    container.append(row);
+    control.append(input, output);
+    row.append(fieldLabel, control);
+    const target =
+      field.key === "contentWidth" || field.key === "pageMargin"
+        ? layoutGroup
+        : typographyGroup;
+    target.append(row);
   }
 
   const widthPresets = element("div", { class: "width-presets" });
@@ -154,20 +211,42 @@ export function createAppearancePopover(
     const button = element("button", {
       type: "button",
       "data-width-preset": String(preset.value),
-      title: `${preset.label} ${preset.value}px`,
+      title: `${preset.label}：正文 ${preset.value}px，边距 ${preset.margin}px`,
     });
-    button.innerHTML = `<span>${preset.label}</span><small>${preset.value}</small>`;
+    button.innerHTML = `<span>${preset.label}</span><small>${preset.value} / ${preset.margin}</small>`;
     button.addEventListener("click", () => {
-      settings = { ...settings, contentWidth: preset.value };
+      settings = {
+        ...settings,
+        contentWidth: preset.value,
+        pageMargin: preset.margin,
+      };
       emit();
     });
     widthPresetButtons.set(preset.value, button);
     widthPresets.append(button);
   }
-  container.append(widthPresets);
+  layoutGroup.append(widthPresets);
 
-  const footer = element("div", { class: "popover-footer" });
-  const justifyLabel = element("label", { class: "checkbox" });
+  const websiteGroup = createGroup("website", "网站", "应用范围");
+
+  function createSwitchRow(
+    titleText: string,
+    descriptionText: string,
+    input: HTMLInputElement,
+  ): HTMLLabelElement {
+    const row = element("label", { class: "setting-row switch-row" });
+    const copy = element("span", { class: "setting-copy" });
+    const rowTitle = element("span", { class: "setting-title" });
+    rowTitle.textContent = titleText;
+    const description = element("span", { class: "setting-description" });
+    description.textContent = descriptionText;
+    const toggle = element("span", { class: "switch-control" });
+    copy.append(rowTitle, description);
+    toggle.append(input, element("span", { class: "switch-track" }));
+    row.append(copy, toggle);
+    return row;
+  }
+
   const justifyCheckbox = element("input", {
     type: "checkbox",
     "data-setting": "text-justify",
@@ -176,14 +255,20 @@ export function createAppearancePopover(
     settings = { ...settings, textJustify: justifyCheckbox.checked };
     emit();
   });
-  justifyLabel.append(justifyCheckbox, document.createTextNode("正文两端对齐"));
-  const siteLabel = element("label", { class: "checkbox" });
+  const justifyLabel = createSwitchRow(
+    "正文两端对齐",
+    "让段落左右边缘整齐对齐",
+    justifyCheckbox,
+  );
   const siteOnly = element("input", {
     type: "checkbox",
     "data-setting": "site-only",
   });
-  siteLabel.append(siteOnly, document.createTextNode("仅此网站使用这些设置"));
-  const autoLabel = element("label", { class: "checkbox" });
+  const siteLabel = createSwitchRow(
+    "仅用于此网站",
+    "将当前外观保存为网站专属设置",
+    siteOnly,
+  );
   const autoCheckbox = element("input", {
     type: "checkbox",
     "data-setting": "auto-enter",
@@ -192,7 +277,14 @@ export function createAppearancePopover(
   autoCheckbox.addEventListener("change", () => {
     callbacks.onAutoEnterChange(autoCheckbox.checked);
   });
-  autoLabel.append(autoCheckbox, document.createTextNode("访问此网站时自动进入"));
+  const autoLabel = createSwitchRow(
+    "自动进入阅读模式",
+    "下次访问此网站时自动开启",
+    autoCheckbox,
+  );
+  websiteGroup.append(justifyLabel, siteLabel, autoLabel);
+
+  const footer = element("footer", { class: "popover-footer" });
   const editRule = element("button", { type: "button", class: "link-button" });
   editRule.textContent = "修正此网站";
   editRule.addEventListener("click", callbacks.onEditRule);
@@ -215,14 +307,9 @@ export function createAppearancePopover(
   const reset = element("button", { type: "button", class: "link-button" });
   reset.textContent = "恢复默认设置";
   reset.addEventListener("click", () => callbacks.onReset(scope()));
-  footer.append(
-    copyMarkdown,
-    justifyLabel,
-    siteLabel,
-    autoLabel,
-    editRule,
-    reset,
-  );
+  const secondaryActions = element("div", { class: "secondary-actions" });
+  secondaryActions.append(editRule, reset);
+  footer.append(copyMarkdown, secondaryActions);
   container.append(footer);
 
   function scope(): SettingsScope {
@@ -247,9 +334,12 @@ export function createAppearancePopover(
       button.setAttribute("aria-pressed", String(theme === next.theme));
     }
     for (const [width, button] of widthPresetButtons) {
+      const preset = WIDTH_PRESETS.find((candidate) => candidate.value === width);
       button.setAttribute(
         "aria-pressed",
-        String(width === next.contentWidth),
+        String(
+          width === next.contentWidth && preset?.margin === next.pageMargin,
+        ),
       );
     }
   }

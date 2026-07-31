@@ -23,15 +23,15 @@ export const PAGE_DEFAULT_FONT =
   "var(--re-page-font-family, ui-sans-serif, system-ui, sans-serif)";
 
 export const DEFAULT_SETTINGS: ReaderSettings = {
-  theme: "sepia",
-  fontFamily: SYSTEM_SERIF_FONT,
+  theme: "light",
+  fontFamily: SYSTEM_SANS_FONT,
   fontSize: 19,
   letterSpacing: 0.01,
   lineHeight: 1.85,
   paragraphSpacing: 1.15,
   contentWidth: 720,
   pageMargin: 32,
-  textJustify: false,
+  textJustify: true,
 };
 
 export function resolveSettings(
