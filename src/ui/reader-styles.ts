@@ -107,6 +107,9 @@ export const READER_CSS = `
   .width-presets small { font-size: 10px; font-weight: 500; opacity: .78; }
   select { min-width: 0; padding: 7px; border: 1px solid color-mix(in srgb, var(--re-foreground) 14%, transparent); border-radius: 8px; background: var(--re-background); color: var(--re-foreground); }
   .popover-footer { border-top: 1px solid color-mix(in srgb, var(--re-foreground) 12%, transparent); margin-top: 14px; padding-top: 12px; display: grid; gap: 10px; }
+  .copy-markdown { width: 100%; padding: 10px 12px; border-radius: 9px; color: #fff; background: #5c704f; text-align: center; }
+  .copy-markdown:hover { background: #4f6244; }
+  .copy-markdown:disabled { cursor: default; opacity: .78; }
   .checkbox { display: flex; align-items: center; gap: 8px; color: var(--re-muted); cursor: pointer; }
   .link-button { text-align: left; padding: 4px 0; color: var(--re-muted); }
   .link-button:hover { color: var(--re-foreground); }

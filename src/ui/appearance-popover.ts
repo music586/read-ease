@@ -14,6 +14,7 @@ export interface AppearanceCallbacks {
   onReset(scope: SettingsScope): void;
   onEditRule(): void;
   onAutoEnterChange(enabled: boolean): void;
+  onCopyMarkdown(): Promise<boolean>;
 }
 
 const RANGE_FIELDS: Array<{
@@ -185,10 +186,26 @@ export function createAppearancePopover(
   const editRule = element("button", { type: "button", class: "link-button" });
   editRule.textContent = "修正此网站";
   editRule.addEventListener("click", callbacks.onEditRule);
+  const copyMarkdown = element("button", {
+    type: "button",
+    class: "copy-markdown",
+    "data-action": "copy-markdown",
+  });
+  copyMarkdown.textContent = "复制 Markdown";
+  copyMarkdown.addEventListener("click", async () => {
+    copyMarkdown.disabled = true;
+    copyMarkdown.textContent = "正在生成…";
+    const copied = await callbacks.onCopyMarkdown();
+    copyMarkdown.textContent = copied ? "✓ 已复制 Markdown" : "复制失败，请重试";
+    window.setTimeout(() => {
+      copyMarkdown.disabled = false;
+      copyMarkdown.textContent = "复制 Markdown";
+    }, 1800);
+  });
   const reset = element("button", { type: "button", class: "link-button" });
   reset.textContent = "恢复默认设置";
   reset.addEventListener("click", () => callbacks.onReset(scope()));
-  footer.append(siteLabel, autoLabel, editRule, reset);
+  footer.append(copyMarkdown, siteLabel, autoLabel, editRule, reset);
   container.append(footer);
 
   function scope(): SettingsScope {

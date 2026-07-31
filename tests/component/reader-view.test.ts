@@ -67,6 +67,10 @@ describe("reader view", () => {
       expect.objectContaining({ contentWidth: 800 }),
       "global",
     );
+    expect(
+      host?.shadowRoot?.querySelector('[data-action="copy-markdown"]')
+        ?.textContent,
+    ).toBe("复制 Markdown");
     const readerCss = host?.shadowRoot?.querySelector("style")?.textContent ?? "";
     expect(readerCss).toContain("--re-outer-gap: clamp(20px, 3vw, 44px)");
     expect(readerCss).toContain(

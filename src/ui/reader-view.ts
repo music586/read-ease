@@ -1,6 +1,10 @@
 import type { Article } from "../domain/article";
 import type { ReaderSettings } from "../domain/settings";
 import {
+  articleToMarkdown,
+  copyTextToClipboard,
+} from "../markdown/article-markdown";
+import {
   createAppearancePopover,
   type SettingsScope,
 } from "./appearance-popover";
@@ -88,6 +92,8 @@ export function mountReaderView(
     onReset: callbacks.onResetSettings,
     onEditRule: callbacks.onEditRule,
     onAutoEnterChange: callbacks.onAutoEnterChange,
+    onCopyMarkdown: () =>
+      copyTextToClipboard(articleToMarkdown(article, contentHtml)),
   }, callbacks.autoEnter);
   appearanceButton.addEventListener("click", (event) => {
     event.stopPropagation();
