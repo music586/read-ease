@@ -66,12 +66,22 @@ export const READER_CSS = `
   *, *::before, *::after { box-sizing: border-box; }
   .overlay {
     position: fixed; inset: 0; z-index: 2147483647; overflow: auto;
-    background: var(--re-background); color: var(--re-foreground);
+    background-color: transparent; color: var(--re-foreground);
     font-family: var(--re-font-family); font-size: var(--re-font-size);
     letter-spacing: var(--re-letter-spacing); line-height: var(--re-line-height);
     --re-outer-gap: clamp(20px, 3vw, 44px);
     padding: var(--re-outer-gap) 0 calc(4 * var(--re-outer-gap));
+    transition: background-color 220ms ease-out;
   }
+  .overlay[data-transition-state="visible"] { background-color: var(--re-background); }
+  .reading-progress {
+    position: fixed; top: 0; right: 0; left: 0; z-index: 4; height: 3px;
+    transform: scaleX(0); transform-origin: left center;
+    background: #0a84ff; pointer-events: none;
+    opacity: 0; transition: opacity 150ms ease-out 90ms;
+  }
+  .overlay[data-transition-state="visible"] .reading-progress { opacity: 1; }
+  .reading-progress[hidden] { display: none; }
   .article {
     --re-effective-padding: var(--re-panel-padding);
     width: min(
@@ -84,7 +94,12 @@ export const READER_CSS = `
     box-shadow: var(--re-paper-shadow);
     border: 1px solid var(--re-paper-border);
     border-radius: 3px;
+    opacity: 0;
+    transform: translateY(16px) scale(.985);
+    transform-origin: center top;
+    transition: opacity 220ms ease-out 25ms, transform 280ms cubic-bezier(.22, 1, .36, 1) 25ms;
   }
+  .overlay[data-transition-state="visible"] .article { opacity: 1; transform: none; }
   .source { color: var(--re-muted); font: 600 12px/1.4 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; }
   h1.title { margin: 12px 0 14px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.14; letter-spacing: -.035em; }
   .meta { color: var(--re-muted); font: 14px/1.5 ui-sans-serif, system-ui; margin-bottom: 42px; }
@@ -99,7 +114,7 @@ export const READER_CSS = `
     text-autospace: no-autospace;
   }
   .content h2, .content h3, .content h4 { margin: 2em 0 .75em; line-height: 1.3; }
-  .content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }
+  .content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; cursor: zoom-in; }
   .content img[data-read-ease-wide] {
     width: calc(100% + 2 * var(--re-effective-padding));
     max-width: none;
@@ -115,7 +130,59 @@ export const READER_CSS = `
   .content code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; }
   .content table { width: 100%; border-collapse: collapse; overflow: auto; display: block; margin: 1.5em 0; }
   .content th, .content td { border: 1px solid color-mix(in srgb, var(--re-foreground) 18%, transparent); padding: .55em .7em; }
-  .pill { position: fixed; top: 18px; right: 20px; z-index: 2; display: flex; align-items: center; background: var(--re-panel); border: 1px solid color-mix(in srgb, var(--re-foreground) 12%, transparent); border-radius: 999px; box-shadow: 0 8px 28px #0002; overflow: hidden; }
+  .image-preview {
+    position: fixed; inset: 0; z-index: 6; display: grid; place-items: center;
+    padding: clamp(20px, 4vw, 56px); background: #050607ed;
+    cursor: zoom-out; backdrop-filter: blur(12px); will-change: opacity;
+  }
+  .image-preview[hidden] { display: none; }
+  .image-preview-media {
+    display: block; max-width: 100%; max-height: 100%; width: auto; height: auto;
+    object-fit: contain; cursor: default; user-select: none;
+    box-shadow: 0 24px 80px #000a; transform-origin: center center;
+    will-change: transform, opacity;
+  }
+  .image-preview-title {
+    position: fixed;
+    top: max(23px, calc(env(safe-area-inset-top) + 7px));
+    left: 50%; transform: translateX(-50%);
+    width: min(680px, calc(100vw - 144px)); max-width: calc(100vw - 144px);
+    overflow: hidden; text-align: center;
+    color: #fffffff0; text-overflow: ellipsis; white-space: nowrap;
+    text-shadow: 0 1px 8px #000, 0 3px 18px #000b;
+    font: 560 13px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", ui-sans-serif, system-ui;
+    letter-spacing: .025em; pointer-events: none;
+  }
+  .image-preview-close {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+    border: 0; border-radius: 0; background: transparent;
+    color: #fffffff0; filter: drop-shadow(0 2px 7px #000d);
+    isolation: isolate;
+    transition: color 140ms ease, filter 140ms ease, transform 140ms ease;
+  }
+  .image-preview-close::before {
+    content: ""; position: absolute; inset: 5px; z-index: 0;
+    border-radius: 50%; background: #fff; opacity: 0; transform: scale(.72);
+    box-shadow: 0 0 18px #ffffff38;
+    transition: opacity 140ms ease, transform 180ms cubic-bezier(.22, 1, .36, 1);
+  }
+  .image-preview-close svg { position: relative; z-index: 1; width: 16px; height: 16px; }
+  .image-preview-close:hover {
+    color: #fff; filter: drop-shadow(0 3px 9px #000) brightness(1.15);
+    transform: scale(1.08);
+  }
+  .image-preview-close:active { transform: scale(.92); }
+  .image-preview-close:focus-visible {
+    outline: none; color: #fff;
+    filter: drop-shadow(0 3px 10px #000) brightness(1.15);
+    transform: scale(1.06);
+  }
+  .image-preview-close:focus-visible::before { opacity: .14; transform: scale(1); }
+  .pill { position: fixed; top: 18px; right: 20px; z-index: 2; display: flex; align-items: center; background: var(--re-panel); border: 1px solid color-mix(in srgb, var(--re-foreground) 12%, transparent); border-radius: 999px; box-shadow: 0 8px 28px #0002; overflow: hidden; opacity: 0; transform: translateY(-6px); transition: opacity 160ms ease-out 90ms, transform 190ms ease-out 90ms; }
+  .overlay[data-transition-state="visible"] .pill { opacity: 1; transform: none; }
   button { appearance: none; border: 0; background: transparent; color: var(--re-foreground); cursor: pointer; font: 600 14px/1 ui-sans-serif, system-ui; }
   .pill button { width: 42px; height: 36px; }
   .pill button:hover { background: color-mix(in srgb, var(--re-foreground) 8%, transparent); }
@@ -181,6 +248,20 @@ export const READER_CSS = `
   .secondary-actions { display: flex; justify-content: space-between; gap: 8px; }
   .link-button { padding: 5px 2px; color: var(--re-muted); font-size: 11px; font-weight: 500; }
   .link-button:hover { color: #0a84ff; }
+  .overlay[data-transition-state="exiting"] { background-color: transparent; transition-duration: 220ms; transition-timing-function: ease-in; }
+  .overlay[data-transition-state="exiting"] .article {
+    opacity: 0; transform: translateY(8px) scale(.992);
+    transition: opacity 140ms ease-in, transform 180ms ease-in;
+  }
+  .overlay[data-transition-state="exiting"] .pill,
+  .overlay[data-transition-state="exiting"] .reading-progress {
+    opacity: 0; transform: translateY(-4px); transition: opacity 120ms ease-in, transform 140ms ease-in;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .overlay { transition-duration: 100ms; }
+    .article, .pill { transform: none; transition: opacity 100ms ease; transition-delay: 0ms; }
+    .image-preview-close, .image-preview-close::before { transition: none; }
+  }
   @media (max-width: 640px) {
     .overlay { --re-outer-gap: 10px; }
     .article {
@@ -191,5 +272,19 @@ export const READER_CSS = `
       border-radius: 2px;
     }
     .popover { left: 16px; right: 16px; width: auto; }
+    .image-preview-close {
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      width: 44px; height: 44px;
+    }
+    .image-preview-title {
+      top: max(20px, calc(env(safe-area-inset-top) + 8px));
+      width: calc(100vw - 112px); max-width: calc(100vw - 112px); font-size: 12px;
+    }
+  }
+  @media (forced-colors: active) {
+    .image-preview-close { color: ButtonText; filter: none; }
+    .image-preview-close::before { display: none; }
+    .image-preview-close:focus-visible { outline: 2px solid ButtonText; outline-offset: -3px; }
   }
 `;

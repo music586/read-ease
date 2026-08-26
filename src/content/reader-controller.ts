@@ -4,6 +4,7 @@ import { extractArticle } from "../extraction/extract";
 import { RuleEditor } from "../rule-editor/rule-editor";
 import { sanitizeArticleHtml } from "../sanitization/sanitize";
 import { RuleStore } from "../storage/rule-store";
+import { ReadingPositionStore } from "../storage/reading-position-store";
 import { SettingsStore } from "../storage/settings-store";
 import type { SettingsScope } from "../ui/appearance-popover";
 import { showErrorNotice, type FailureAction } from "../ui/error-notice";
@@ -21,11 +22,13 @@ export class ReaderController {
   private temporaryRule: SiteRule | undefined;
   private removeNotice: (() => void) | null = null;
   private suppressedUrl: string | null = null;
+  private currentArticleUrl: string | null = null;
 
   constructor(
     private readonly settingsStore = new SettingsStore(),
     private readonly ruleStore = new RuleStore(),
     private readonly ruleEditor = new RuleEditor(),
+    private readonly readingPositionStore = new ReadingPositionStore(),
   ) {}
 
   async toggle(): Promise<void> {
@@ -60,7 +63,9 @@ export class ReaderController {
       await this.settingsStore.getSite(url.hostname),
     );
     const safeHtml = sanitizeArticleHtml(result.article.contentHtml, url);
+    const savedReadingPosition = await this.readingPositionStore.get(url.href);
     this.scrollPosition = window.scrollY;
+    this.currentArticleUrl = url.href;
     this.view = mountReaderView(result.article, safeHtml, this.currentSettings, {
       onExit: () => this.exit(),
       onSettingsChange: (settings, scope) =>
@@ -70,12 +75,20 @@ export class ReaderController {
       onAutoEnterChange: (enabled) => void this.setAutoEnter(enabled),
       autoEnter: this.currentRule?.autoEnter ?? false,
     });
+    this.view.restoreScrollPosition(savedReadingPosition);
     document.addEventListener("keydown", this.onKeydown, true);
     this.state = "reading";
   }
 
   exit(manual = true): void {
     if (manual && this.currentRule?.autoEnter) this.suppressedUrl = location.href;
+    if (this.view && this.currentArticleUrl) {
+      void this.readingPositionStore.set(
+        this.currentArticleUrl,
+        this.view.getScrollPosition(),
+      );
+    }
+    this.currentArticleUrl = null;
     this.view?.unmount();
     this.view = null;
     this.removeNotice?.();
@@ -88,6 +101,7 @@ export class ReaderController {
   private readonly onKeydown = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && this.state === "reading") {
       event.preventDefault();
+      if (this.view?.closeImagePreview()) return;
       this.exit();
     }
   };
@@ -117,7 +131,7 @@ export class ReaderController {
   }
 
   private async startRuleSelection(advanced = false): Promise<void> {
-    this.view?.unmount();
+    this.view?.unmount({ immediate: true });
     this.view = null;
     this.state = "selecting";
     const url = new URL(location.href);
@@ -157,7 +171,7 @@ export class ReaderController {
   private async setAutoEnter(enabled: boolean): Promise<void> {
     if (!this.currentRule) {
       window.alert("请先使用“修正此网站”保存一条网站规则，再开启自动进入。");
-      this.view?.unmount();
+      this.view?.unmount({ immediate: true });
       this.view = null;
       this.state = "idle";
       await this.enter();

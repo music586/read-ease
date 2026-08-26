@@ -40,4 +40,32 @@ describe("reader theme colors", () => {
     expect(READER_CSS).not.toContain("text-justify: inter-ideograph");
     expect(READER_CSS).not.toContain("--re-word-break");
   });
+
+  it("animates the overlay and paper while respecting reduced motion", () => {
+    expect(READER_CSS).toContain("transition: background-color 220ms");
+    expect(READER_CSS).toContain("translateY(16px) scale(.985)");
+    expect(READER_CSS).toContain("transform 280ms cubic-bezier(.22, 1, .36, 1) 25ms");
+    expect(READER_CSS).toContain("transform 190ms ease-out 90ms");
+    expect(READER_CSS).toContain('[data-transition-state="exiting"]');
+    expect(READER_CSS).toContain('[data-transition-state="visible"]');
+    expect(READER_CSS).toContain("prefers-reduced-motion: reduce");
+  });
+
+  it("centers the image preview title while reserving room for controls", () => {
+    expect(READER_CSS).toMatch(
+      /\.image-preview-title \{[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\);/,
+    );
+    expect(READER_CSS).toContain("max-width: calc(100vw - 144px)");
+  });
+
+  it("uses a soft focus treatment for the preview close icon", () => {
+    expect(READER_CSS).toContain("width: 16px; height: 16px");
+    expect(READER_CSS).toMatch(
+      /\.image-preview-close:focus-visible \{[\s\S]*?outline: none;[\s\S]*?transform: scale\(1\.06\);/,
+    );
+    expect(READER_CSS).toMatch(
+      /\.image-preview-close:focus-visible::before \{[\s\S]*?opacity: \.14;/,
+    );
+    expect(READER_CSS).toContain("@media (forced-colors: active)");
+  });
 });

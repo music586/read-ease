@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { Article } from "../../src/domain/article";
 import { DEFAULT_SETTINGS } from "../../src/domain/settings";
 import {
+  imageTransitionTransform,
   mountReaderView,
   normalizeProseBlocks,
   normalizeProseLineBreaks,
+  updateReadingProgress,
   updateWideImageLayout,
 } from "../../src/ui/reader-view";
 
@@ -22,6 +24,15 @@ const article: Article = {
 };
 
 describe("reader view", () => {
+  it("calculates a FLIP transform from the full-screen image back to its article position", () => {
+    expect(
+      imageTransitionTransform(
+        { left: 10, top: 20, width: 200, height: 100 },
+        { left: 100, top: 80, width: 800, height: 400 },
+      ),
+    ).toBe("translate(-390px, -210px) scale(0.25, 0.25)");
+  });
+
   it("turns WeChat leaf sections into paragraphs but preserves media layouts", () => {
     const content = document.createElement("div");
     content.innerHTML = `<section><span>微信正文内容</span></section><section><img src="image.jpg"></section><section><section><span>嵌套布局</span></section></section>`;
@@ -102,6 +113,179 @@ describe("reader view", () => {
     expect(small.hasAttribute("data-read-ease-wide")).toBe(false);
   });
 
+  it("shows reading progress only when the whole page exceeds three screens", () => {
+    const overlay = document.createElement("div");
+    const progress = document.createElement("div");
+    Object.defineProperties(overlay, {
+      clientHeight: { value: 1000 },
+      scrollHeight: { value: 3000, configurable: true },
+      scrollTop: { value: 0, writable: true },
+    });
+
+    updateReadingProgress(overlay, progress);
+    expect(progress.hidden).toBe(true);
+
+    Object.defineProperty(overlay, "scrollHeight", { value: 3001 });
+    updateReadingProgress(overlay, progress);
+    expect(progress.hidden).toBe(false);
+  });
+
+  it("updates reading progress from the top to the bottom of the whole page", () => {
+    const overlay = document.createElement("div");
+    const progress = document.createElement("div");
+    Object.defineProperties(overlay, {
+      clientHeight: { value: 1000 },
+      scrollHeight: { value: 4000 },
+      scrollTop: { value: 1500, writable: true },
+    });
+
+    updateReadingProgress(overlay, progress);
+
+    expect(progress.style.transform).toBe("scaleX(0.5)");
+    expect(progress.getAttribute("aria-valuenow")).toBe("50");
+  });
+
+  it("reads and restores the reader scroll position within its current range", () => {
+    const handle = mountReaderView(
+      article,
+      article.contentHtml,
+      DEFAULT_SETTINGS,
+      {
+        onExit: vi.fn(),
+        onSettingsChange: vi.fn(),
+        onResetSettings: vi.fn(),
+        onEditRule: vi.fn(),
+        onAutoEnterChange: vi.fn(),
+        autoEnter: false,
+      },
+    );
+    const overlay = document
+      .querySelector<HTMLElement>("[data-read-ease-host]")
+      ?.shadowRoot?.querySelector<HTMLElement>(".overlay");
+    Object.defineProperties(overlay, {
+      clientHeight: { value: 600 },
+      scrollHeight: { value: 1800 },
+      scrollTop: { value: 0, writable: true },
+    });
+
+    handle.restoreScrollPosition(1600);
+
+    expect(handle.getScrollPosition()).toBe(1200);
+    expect(overlay?.scrollTop).toBe(1200);
+    handle.unmount({ immediate: true });
+  });
+
+  it("opens article images in a modal preview and closes it from the backdrop", () => {
+    const handle = mountReaderView(
+      article,
+      '<p>Before</p><img src="https://example.com/photo.jpg" alt="山间照片"><p>After</p>',
+      DEFAULT_SETTINGS,
+      {
+        onExit: vi.fn(),
+        onSettingsChange: vi.fn(),
+        onResetSettings: vi.fn(),
+        onEditRule: vi.fn(),
+        onAutoEnterChange: vi.fn(),
+        autoEnter: false,
+      },
+    );
+    const shadow = document.querySelector<HTMLElement>("[data-read-ease-host]")
+      ?.shadowRoot;
+    const articleImage = shadow?.querySelector<HTMLImageElement>(".content img");
+    const preview = shadow?.querySelector<HTMLElement>(".image-preview");
+
+    articleImage?.click();
+
+    expect(preview?.hidden).toBe(false);
+    expect(preview?.getAttribute("role")).toBe("dialog");
+    expect(preview?.getAttribute("aria-modal")).toBe("true");
+    expect(
+      preview?.querySelector<HTMLImageElement>(".image-preview-media")?.src,
+    ).toBe("https://example.com/photo.jpg");
+    expect(
+      preview?.querySelector<HTMLImageElement>(".image-preview-media")?.alt,
+    ).toBe("山间照片");
+    const closeButton = preview?.querySelector<HTMLButtonElement>(
+      ".image-preview-close",
+    );
+    expect(
+      preview?.querySelector<HTMLElement>(".image-preview-title")?.textContent,
+    ).toBe("A quiet article");
+    expect(closeButton?.textContent?.trim()).toBe("");
+    expect(closeButton?.querySelector("svg")?.getAttribute("aria-hidden")).toBe(
+      "true",
+    );
+    expect(closeButton?.querySelector("path")?.getAttribute("stroke-width")).toBe(
+      "2.2",
+    );
+
+    preview?.click();
+    expect(preview?.hidden).toBe(true);
+    handle.unmount({ immediate: true });
+  });
+
+  it("consumes the first Escape for an open image preview and leaves the next Escape to the reader", () => {
+    const handle = mountReaderView(
+      article,
+      '<img src="https://example.com/photo.jpg" alt="预览图片">',
+      DEFAULT_SETTINGS,
+      {
+        onExit: vi.fn(),
+        onSettingsChange: vi.fn(),
+        onResetSettings: vi.fn(),
+        onEditRule: vi.fn(),
+        onAutoEnterChange: vi.fn(),
+        autoEnter: false,
+      },
+    );
+    const shadow = document.querySelector<HTMLElement>("[data-read-ease-host]")
+      ?.shadowRoot;
+    shadow?.querySelector<HTMLImageElement>(".content img")?.click();
+
+    expect(handle.closeImagePreview()).toBe(true);
+    expect(shadow?.querySelector<HTMLElement>(".image-preview")?.hidden).toBe(
+      true,
+    );
+    expect(handle.closeImagePreview()).toBe(false);
+
+    handle.unmount({ immediate: true });
+  });
+
+  it("animates the reader in and delays removal while it animates out", () => {
+    vi.useFakeTimers();
+    const animationFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(0);
+        return 1;
+      });
+    const handle = mountReaderView(
+      article,
+      article.contentHtml,
+      DEFAULT_SETTINGS,
+      {
+        onExit: vi.fn(),
+        onSettingsChange: vi.fn(),
+        onResetSettings: vi.fn(),
+        onEditRule: vi.fn(),
+        onAutoEnterChange: vi.fn(),
+        autoEnter: false,
+      },
+    );
+    const host = document.querySelector<HTMLElement>("[data-read-ease-host]");
+    const overlay = host?.shadowRoot?.querySelector<HTMLElement>(".overlay");
+
+    expect(overlay?.dataset.transitionState).toBe("visible");
+    handle.unmount();
+    expect(overlay?.dataset.transitionState).toBe("exiting");
+    expect(document.querySelector("[data-read-ease-host]")).not.toBeNull();
+
+    vi.advanceTimersByTime(250);
+    expect(document.querySelector("[data-read-ease-host]")).toBeNull();
+    animationFrame.mockRestore();
+    vi.useRealTimers();
+  });
+
   it("mounts isolated content and unmounts without changing the source page", () => {
     const source = document.createElement("main");
     source.textContent = "Original page";
@@ -122,6 +306,7 @@ describe("reader view", () => {
     );
     const host = document.querySelector<HTMLElement>("[data-read-ease-host]");
     expect(host?.shadowRoot?.textContent).toContain("A quiet article");
+    expect(host?.shadowRoot?.querySelector(".reading-progress")).not.toBeNull();
     expect(source.textContent).toBe("Original page");
     expect(host?.shadowRoot?.querySelector(".content")?.getAttribute("lang"))
       .toBe("zh-CN");
@@ -205,7 +390,7 @@ describe("reader view", () => {
     expect(readerCss).toContain("padding: 82px var(--re-effective-padding)");
     expect(readerCss).toContain("border-radius: 3px");
     expect(readerCss).toContain(
-      ".content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; }",
+      ".content img { display: block; max-width: 100%; height: auto; margin: 2em auto; border-radius: 3px; cursor: zoom-in; }",
     );
     expect(readerCss).toContain(
       "width: calc(100% + 2 * var(--re-effective-padding))",
@@ -221,7 +406,7 @@ describe("reader view", () => {
       host?.shadowRoot?.querySelector<HTMLElement>(".overlay") ?? null;
     expect(overlay?.style.getPropertyValue("--re-page-margin")).toBe("64px");
     expect(overlay?.style.getPropertyValue("--re-panel-padding")).toBe("64px");
-    handle.unmount();
+    handle.unmount({ immediate: true });
     expect(document.querySelector("[data-read-ease-host]")).toBeNull();
     expect(source.textContent).toBe("Original page");
   });
